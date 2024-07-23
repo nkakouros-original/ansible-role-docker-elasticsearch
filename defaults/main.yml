@@ -1,0 +1,278 @@
+---
+
+elastic_enabled: true
+# Set to false to completely disable the role
+
+# Installation{{{
+elastic_major_version: 8
+# The major version of elasticsearch to install. This will also be used to add
+# the relevant repository.
+
+elastic_minor_version: 14
+# The minor version of elasticsearch to install. Set to `'*'` to install the
+# latest minor version for the `elastic_major_version`.
+
+elastic_patch_version: 2
+# The patch version of elasticsearch to install. Set to `'*'` to install the
+# latest patch version. If `elastic_minor_version` is set to `'*'` this is
+# effectively ignored.
+
+# memory settings
+
+elastic_jvm_min_heap_size: 1g
+elastic_jvm_max_heap_size: 1g
+
+
+elastic_ssl_http: false
+elastic_ssl_transport: false
+# Set to true to have the role populate the elasticsearch settings that will
+# enable TLS encryption for the HTTP endpoint and the transport layer
+# respectively. If you keep these variable to false, you will have to manually
+# configure elasticsearch (via the `elastic_config` variable) to use the
+# certificates.
+
+elastic_ssl_verification_mode: full
+# Whether to request connecting clients to provide a valid certificate. This
+# will be used if `elastic_ssl_http/elastic_ssl_transport` are set to true.
+
+elastic_systemd_override: ~
+# Use this to override system settings using a systemd override. Eg:
+# elastic_systemd_override: |
+#   [Service]
+#   LimitMEMLOCK=infinity
+
+elastic_config:
+  http:
+    host:
+      - 0.0.0.0
+    port: 9200
+  transport:
+    host:
+      - 0.0.0.0
+    port: 9300
+  cluster:
+    name: elasticsearch
+  node:
+    name: "{{ inventory_hostname }}"
+    roles: [ master, data, ingest ]
+  discovery:
+    seed_providers:
+      - settings
+    seed_hosts:
+      - 0.0.0.0
+    type: single-node  # `zen`: multi-node cluster, `single-node`: single node cluster
+  path:
+    data: /usr/share/elasticsearch/data
+    logs: "{{ es_log_dir }}"
+  xpack:
+    security:
+      hide_settings: 'xpack.security.authc.realms.native.*'
+      enabled: false
+      transport.ssl.enabled: false
+      http.ssl.enabled: false
+
+elastic_config_initial_overrides: ~
+# Use this variable to set configuration options that will be valid only the
+# first time elasticsearch is installed and started. This will be merged
+# **non-recursively** with `elastic_config` to produce the initial configuration
+# for elasticsearch. This is useful, for instance, to start a single node
+# cluster where you create users, import pipelines, etc and which you then want
+# to convert into a multiple node cluster. With this variable, you can set for
+# the first node you will be creating in the cluster:
+#
+# ```
+# elastic_config_initial_overrides:
+#   discovery:
+#     type: single-node
+#   cluster:
+#     name: "{{ elastic_config.cluster.name }}"
+#     # needs to be repeated from `elastic_config` since `elastic_config` and
+#     `elastic_config_initial_overrides` will be merged non-recursively and the
+#     `cluster` key will completely override the same key of `elastic_config`.
+
+elastic_certificates_password: ~
+# The password to use to protect the generated private keys. Leave empty to set
+# the empty string as the password. Certificates do need to have a password even
+# if it is blank.
+
+elastic_certificates_password_renew: false
+# When uploading a certificate to a node, its password will be stored to the
+# elasticsearch keystore on that node. If you change the
+# `elastic_certificates_password` eg when renewing certificates, then the old
+# password stored on a node's keystore will cause failures. Thus, if you are
+# updating the certificate password, set this variable to true to update the
+# node's keystore as well. The default here is false to support idempotency.
+
+
+elastic_user: elasticsearch
+
+elastic_group: elasticsearch
+
+
+# elasticearch settings
+es_config_dir: "/usr/share/elasticsearch/config"
+es_data_dir: "/usr/share/elasticsearch/data"
+es_log_dir: "/var/log/elasticsearch"
+
+# Plugins {{{
+elastic_plugins: []
+# A list of elasticsearch plugins to install. This can be a list of plugin
+# names, urls, etc or a list dicts like the one below. You can also mix the two
+# formats.
+# ```
+# elastic_plugins:
+#   - repository-aws
+#   - name: repository-gcs
+#     mandatory: true
+# ```
+# The `mandatory` keyword will instruct the role to add this plugin in the
+# comma-separated list under `plugin.mandatory` in the `elastic_config`. This
+# means that elasticsearch will fail to start if the plugin is not installed.
+
+# Repository GCS {{{
+# For this plugin, you need to create a Google Cloud Storage and Google Cloud
+# credentials outside of this role.
+
+elastic_plugin_gcs_enabled: false
+# Set to true to have the role configure the repository-gcs plugin.
+
+elastic_plugin_gcs_credentials: ~
+# The GCP credentials to use for the repository-gcs plugin. This must be set if
+# the plugin is enabled, otherwise the role will fail. The format is as follows:
+# ```
+# elastic_plugin_gcs_credentials:
+#   name: client  # the name of the client, to be used when defining snapshots
+#   src: /local/path/to/json/file
+# ```
+
+elastic_plugin_gcs_refresh_credentials: false
+# Set to true to replace any already stored credentials.
+
+elastic_plugin_gcs_bucket_name: my-bucket
+# The google cloud storage bucket that will be used to store the snapshots.
+# }}}
+# }}}
+# Snapshots {{{
+elastic_snapshot_repositories: []
+# A list of snapshot repositories. The format is as follows.
+# ```
+# elastic_snapshot_repositories:
+#   - name: repo-name
+#     type: fs
+#     settings:
+#       location: "/mnt/snapshots/"
+#       compress: true
+# ```
+# To use a snapshot type that is offered by a plugin, use `elastic_plugins` to
+# install the required plugin first.
+
+elastic_snapshot_policy_enable: true
+# Set to false to halt all snapshot lifecycle management operations.
+
+elastic_snapshot_policies: []
+# A list of snapshots policies to install. The format is as follows.
+# ```
+# elastic_snapshot_policies:
+#   - id: my-sql-policy
+#     name: 'my-index-{now/d}'
+#     repository: repo-name
+#     config:
+#       indices: ['*']
+#     schedule: "0 39 1 * * ?"
+#     retention:
+#       expire_after: 30d
+#       min_count: 4
+#       max_count: 30
+# ```
+# }}}
+
+elastic_ingest_pipelines: []
+# A list of files that contain a list of ingest pipeline specifications in yaml
+# format. Example:
+# ```
+# elastic_ingest_pipelines:
+#   - src: /path/to/file
+# ```
+#
+# Alternatively, you can provide the pipeline inline using the following syntax:
+# ```
+# elastic_ingest_pipelines:
+#   - description: ...
+#     ...
+# ```
+#
+# Here is an example of an OpenVPN log file parsing pipeline:
+# ```
+# pipelines:  # this key is needed if the pipeline is stored in a file
+#   - description: "openvpn-connection-log-line"
+#     processors:
+#       - grok:
+#           field: message
+#           ignore_failure: true
+#           patterns:
+#             - >-
+#                 %{TIMESTAMP:openvpn.date} %{DATA}
+#                   \\[%{DATA:openvpn.common_name}\\] Peer Connection Initiated
+#                   with \\[AF_INET\\]%{IP:openvpn.host}:%{POSINT:openvpn.port}
+#           pattern_definitions:
+#             TIMESTAMP: "%{DAY} %{MONTH}  ?%{MONTHDAY} %{TIME} %{YEAR}"
+#       - gsub:
+#           field: "openvpn.date"
+#           pattern: "  "
+#           replacement: ' '
+#       - date:
+#           field: "openvpn.date"
+#           formats:
+#             - EEE MMM d HH:mm:ss yyyy
+# ```
+
+elastic_stored_scripts: []
+# A list of scripts to store on elasticsearch for faster use in ingest node
+# pipelines, etc. The format is:
+# elastic_stored_scripts:
+#   - name: my-script
+#     lang: painless
+#     source: "ctx.agent.type == 'packetbeat'"
+
+elastic_api_requests: []
+# A list of arbitrary API requests to perform. The previous variables are
+# provided for convenience. You could replace them with this variable here. The
+# format of this variable is for example:
+# ```yaml
+# elastic_api_requests:
+#   - name: just-a-name-for-your-documentation-not-used-by-the-role
+#     path: "_scripts/my-script"
+#     method: PUT
+#     body:
+#       script:
+#         lang: painless
+#         source: ...
+#   ```
+elastic_cluster_uuid_backup: ~
+# Set to a file on the controller where you would like the cluster uuid to be
+# stored. The cluster uuid is useful when e.g. setting up beats monitoring and
+# you want to include the beats in the same cluster as elasticsearch.
+# }}}
+
+# Roles {{{
+elastic_custom_roles: []
+# Use this variable to define a list of custom roles for users. The syntax of
+# each role is simply the YAML equivalent of the json syntax for defining a role
+# (see the docs). Example:
+# }}}
+# Native realm {{{
+elastic_users: []
+# Example:
+# elastic_users:
+#   - name: my_user  # required
+#     pass: my_pass  # required
+#     enabled: true  # defaults to true
+#     email: user@email.com
+#     full_name: User Name
+#     roles:         # you can also use `groups` instead of `roles`
+#       - beats_admin
+#
+# Use this variable to create custom users on Elasticsearch. Depending on your
+# workflow, you may also want to use this to add custom passwords for the
+# built-in users, which will overwrite the random ones created by the role.
+# }}}

@@ -1,0 +1,11 @@
+---
+
+- name: Prepare
+  hosts: all
+  roles:
+    - geerlingguy.docker
+  tasks:
+     - name: Create docker network
+       docker_network:
+         name: "elastic"
+         state: present
