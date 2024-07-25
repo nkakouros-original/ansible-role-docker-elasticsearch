@@ -24,10 +24,11 @@
     - elasticsearch.yml
     - log4j2.properties
     - jvm.options
+  changed_when: false
 
 - name: Set vm.max_map_count to 262144 in sysctl
   sysctl:
     name: "{{ item.key }}"
     value: "{{ item.value }}"
   with_items:
-    - {key: "vm.max_map_count", value: "262144"}
+    - { key: "vm.max_map_count", value: "262144"}

@@ -7,6 +7,13 @@
     owner: "{{ elastic_user }}"
     group: "{{ elastic_group }}"
     mode: 0o750
+  changed_when: false
+
+- name: Check if Elasticsearch certificates exist
+  find:
+    paths: "{{ elastic_certificates_dir }}"
+    file_type: file
+  register: cert_files
 
 - name: Upload certificates
   copy:
@@ -18,6 +25,7 @@
   loop: "{{ elastic_certificates| dict2items }}"
   loop_control:
     loop_var: _elasticsearch__certificate
+  when: cert_files.matched < 3
   notify: elastic-restart-service
 
 - name: Add transport TSL configuration

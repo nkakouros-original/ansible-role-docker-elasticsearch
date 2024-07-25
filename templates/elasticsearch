@@ -8,7 +8,7 @@ docker pull docker.elastic.co/elasticsearch/elasticsearch:"{{ elastic_major_vers
 docker rm -f -v elasticsearch || :
 
 docker run --network=elastic --rm --name=elasticsearch \
-         -p {{ es_port }}:{{ es_port }} -p{{ es_publish_port }}:{{ es_publish_port }} \
+         -p 9200:9200 -p 9300:9300 \
           --ulimit nproc=65535 --ulimit memlock=-1:-1 --ulimit nofile=165535:165535  \
          -e "ES_JAVA_OPTS=-Xms{{ elastic_jvm_min_heap_size }} -Xmx{{ elastic_jvm_max_heap_size }}" \
          -e "discovery.type=single-node" \

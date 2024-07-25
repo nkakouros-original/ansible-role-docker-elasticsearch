@@ -29,12 +29,14 @@
     owner: "{{ elastic_user }}"
     group: "{{ elastic_group }}"
     mode: 0o660
+  changed_when: false
 
 - name: Add further custom JVM configuration
   blockinfile:
-    path: /etc/elasticsearch/jvm.options
+    path: "{{ es_config_dir }}/jvm.options"
     block: "{{ elastic_jvm_extra_config }}"
   when: elastic_jvm_extra_config != None
+  changed_when: false
 
 - name: Create systemd override file
   copy:

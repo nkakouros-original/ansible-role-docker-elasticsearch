@@ -1,5 +1,4 @@
-elastic_jvm_extra_config: |
-  -Des.enforce.bootstrap.checks=true
+elastic_jvm_extra_config: -Des.enforce.bootstrap.checks=true
 elastic_certificates_password: 'nk}$Q%];a3Gy$E!QvT8E'
 
 
