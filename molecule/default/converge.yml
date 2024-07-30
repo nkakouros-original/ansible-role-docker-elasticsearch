@@ -3,6 +3,6 @@
 - name: Converge
   hosts: all
   roles:
-    - abhi8080.docker-elasticsearch
+    - abhi8080.docker_elasticsearch
   vars_files:
     - converge-vars.yml
