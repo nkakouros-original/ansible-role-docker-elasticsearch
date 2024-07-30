@@ -7,7 +7,7 @@ elastic_certificates:
   crt: "~/pki/issued/elastic.crt"
   key: "~/pki/private/elastic.key"
 
-elastic_certificates_dir: /usr/share/elasticsearch/config/cert
+elastic_certificates_dir: /usr/share/elasticsearch/config/certs/
 
 template_files:
   # When using logstash in front of kibana and you use elastic beats to send
