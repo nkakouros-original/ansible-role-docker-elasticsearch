@@ -24,8 +24,7 @@
       command: id -nG {{ elastic_user }}
       register: _result
       failed_when: "'{{ elastic_group }}' not in _result.stdout"
-      when: elastic_user != 'root'
-
+      
     - name: Tasks specific to certificates
       block:
         - name: Check that the certificates directory exists and has correct permissions
