@@ -1,3 +1,4 @@
 ---
 
+- src: nkakouros.easyrsa
 - src: geerlingguy.docker
